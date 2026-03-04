@@ -1,17 +1,15 @@
 # slow-why
 
-**Automatically explains *why* a Node.js request is slow — during development.**
+> **slow-why automatically explains why a Node.js request is slow in development.**
 
-`slow-why` watches your Express requests, tracks database queries, external API calls, and event-loop blocking, then prints a short human explanation instead of raw timing data.
-
----
+Stop guessing why your API endpoints are slow. slow-why gives you instant, actionable explanations for slow requests during development.
 
 ## ✨ What Problem Does This Solve?
 
 When an endpoint is slow, developers usually see:
 
 * logs
-* timestamps
+* timestamps  
 * query counts
 * profiler output
 
@@ -25,55 +23,52 @@ You still have to manually figure out:
 
 `slow-why` answers that automatically.
 
----
-
 ## 🧠 What It Does
 
 During development, `slow-why`:
 
-* Tracks each request independently
+* Tracks each request independently using AsyncLocalStorage
 * Instruments database and network calls
 * Detects common performance issues
 * Prints a concise explanation
 
-Example output:
+### Example Output
 
 ```
-┌────────────────────────────────────┐
-│ Slow request detected (842ms)      │
-│                                    │
-│ • 71% time spent in repeated DB    │
-│   queries — likely N+1 pattern     │
-│                                    │
-│ • External API consumed 52%        │
-│   of total request time            │
-│                                    │
-│ • Event loop blocked for 134ms     │
-└────────────────────────────────────┘
+============================================================
+🐌 Slow Request Detected by slow-why
+============================================================
+Path: /api/users
+Method: GET
+Total Time: 842ms
+
+⚠️  N+1 Query Pattern Detected
+Query: select * from users where id = ?
+Count: 6
+Time Impact: 71.2%
+
+💡 slow-why helps you debug performance issues in development
+============================================================
 ```
 
 No dashboards. No setup complexity.
 
----
+## ✅ MVP Scope (v1.0)
 
-## ✅ MVP Scope (v0.x)
-
-Supported:
+**Supported:**
 
 * Express.js middleware
-* `pg` (node-postgres)
+* `pg` (node-postgres)  
 * global `fetch`
 * Event loop delay detection
 
-Detects:
+**Detects:**
 
 * N+1 database queries
 * Slow external API calls
 * Event loop blocking
 
-Development use only.
-
----
+**Development use only.**
 
 ## 📦 Installation
 
@@ -81,148 +76,196 @@ Development use only.
 npm install slow-why
 ```
 
----
-
 ## 🚀 Quick Start
 
-```ts
-import express from "express"
-import { slowWhy } from "slow-why"
+### Basic Setup
+
+```js
+const express = require('express')
+const { slowWhy, patchPg, patchFetch } = require('slow-why')
+
+// Patch libraries to track performance
+patchPg(require('pg').Client)
+patchFetch()
 
 const app = express()
-
 app.use(slowWhy())
 
-app.get("/", async (req, res) => {
-  res.send("hello")
+app.get("/users", async (req, res) => {
+  // Your slow endpoint here
+  res.json({ users: [] })
 })
 
 app.listen(3000)
 ```
 
-Run your app normally:
+### Configuration Options
 
-```bash
-npm run dev
+```js
+app.use(slowWhy({
+  threshold: 200,           // Minimum duration before analysis (ms)
+  enableNPlusOne: true,     // Enable N+1 detection
+  enableSlowExternal: true, // Enable slow external detection
+  enableEventBlocking: true,// Enable event loop detection
+  nPlusOneThreshold: 5,     // Minimum similar queries for N+1
+  slowExternalThreshold: 0.4,// Min percentage for slow external
+  eventBlockingThreshold: 20 // Min block time for event loop (ms)
+}))
 ```
 
-Slow requests will automatically display explanations in the console.
-
----
-
-## ⚙️ Configuration
-
-```ts
-slowWhy({
-  threshold: 200 // ms before reporting
-})
-```
-
-Options:
-
-| Option      | Default | Description                              |
-| ----------- | ------- | ---------------------------------------- |
-| `threshold` | `200`   | Minimum request duration before analysis |
-
----
-
-## 🔍 How It Works
-
-For each request:
-
-1. Creates isolated async context
-2. Tracks:
-
-   * database queries (`pg`)
-   * fetch requests
-   * event loop delay
-3. Analyzes timing contribution
-4. Generates a human-readable explanation
-
-No application code changes required.
-
----
-
-## 🧪 Example Problems Detected
+## 🔍 Detection Examples
 
 ### N+1 Queries
 
-```
-SELECT * FROM users WHERE id = 1
-SELECT * FROM users WHERE id = 2
-SELECT * FROM users WHERE id = 3
+```js
+// This will be detected as N+1
+for (const userId of [1, 2, 3, 4, 5, 6]) {
+  await client.query(`SELECT * FROM users WHERE id = ${userId}`)
+}
 ```
 
-→ grouped and flagged automatically.
-
----
+**Output:**
+```
+⚠️  N+1 Query Pattern Detected
+Query: select * from users where id = ?
+Count: 6
+Time Impact: 71.2%
+```
 
 ### Slow External API
 
-If one HTTP request dominates execution time, it is highlighted.
+```js
+// This will be detected as slow external
+await fetch("https://slow-api.com/data") // Takes 800ms
+```
 
----
+**Output:**
+```
+🌐 Slow External API Call
+URL: https://slow-api.com/data
+Duration: 800ms
+Time Impact: 85.3%
+```
 
 ### Event Loop Blocking
 
-CPU-heavy synchronous work is detected using Node's event loop delay monitor.
+```js
+// This will be detected as event loop blocking
+const start = Date.now()
+while (Date.now() - start < 100) {} // Block for 100ms
+```
 
----
+**Output:**
+```
+🧵 Event Loop Blocking
+Max Block: 104ms
+Total Blocked: 104ms
+Time Impact: 12.4%
+```
+
+## ⚙️ Configuration Reference
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `threshold` | `500` | Minimum request duration before analysis (ms) |
+| `enableNPlusOne` | `true` | Enable/disable N+1 detection |
+| `enableSlowExternal` | `true` | Enable/disable slow external detection |
+| `enableEventBlocking` | `true` | Enable/disable event loop detection |
+| `nPlusOneThreshold` | `5` | Minimum similar queries for N+1 pattern |
+| `slowExternalThreshold` | `0.4` | Min percentage of total time for external calls |
+| `eventBlockingThreshold` | `20` | Minimum block time in ms for event loop |
+
+## 🧪 Testing
+
+### Unit Tests
+
+```bash
+npm test
+```
+
+### Manual Testing
+
+```bash
+# Start test server
+npm run test:integration
+
+# Test different scenarios
+curl http://localhost:3004/test-working
+```
+
+## 🛠️ How It Works
+
+For each request:
+
+1. **Creates isolated async context** using AsyncLocalStorage
+2. **Tracks operations:**
+   * Database queries (`pg`)
+   * Fetch requests  
+   * Event loop delay
+3. **Analyzes timing contribution** of each operation
+4. **Generates human-readable explanation** if thresholds are exceeded
+
+No application code changes required beyond middleware setup.
+
+## 🧩 Supported Stack (v1.0)
+
+| Tool | Status | Notes |
+|------|--------|-------|
+| Express | ✅ | Full support |
+| pg | ✅ | Automatic query tracking |
+| fetch | ✅ | Built-in and external APIs |
+| Fastify | 🚧 | Planned |
+| Prisma | 🚧 | Planned |
+| Mongoose | 🚧 | Planned |
 
 ## ⚠️ Development Only
 
 `slow-why` is disabled automatically in production:
 
-```ts
-NODE_ENV=production
+```bash
+NODE_ENV=production npm start
 ```
 
 The library is designed for local debugging, not runtime monitoring.
 
----
-
-## 🧩 Supported Stack (v0.x)
-
-| Tool    | Status     |
-| ------- | ---------- |
-| Express | ✅          |
-| pg      | ✅          |
-| fetch   | ✅          |
-| Fastify | 🚧 planned |
-| Prisma  | 🚧 planned |
-
----
-
 ## 🛣 Roadmap
 
-* Better query normalization
-* Prisma support
-* Fastify adapter
-* Custom detectors
-* IDE integration
-
----
+* **Better query normalization** - Handle complex SQL patterns
+* **Prisma support** - Automatic Prisma query tracking
+* **Fastify adapter** - Support for Fastify framework
+* **Custom detectors** - Plugin system for custom patterns
+* **IDE integration** - VS Code extension for inline hints
+* **Performance metrics** - Historical tracking and trends
 
 ## 🤝 Contributing
 
-Issues and suggestions are welcome.
+Issues and suggestions are welcome!
 
 If you encounter incorrect detections, open an issue with:
 
-* example query/code
-* expected behavior
-* actual output
+* Example query/code
+* Expected behavior  
+* Actual output
 
----
+### Development Setup
+
+```bash
+git clone https://github.com/your-username/slow-why.git
+cd slow-why
+npm install
+npm test
+```
 
 ## 📄 License
 
 MIT
-
----
 
 ## 💡 Philosophy
 
 Performance tools usually show **what happened**.
 
 `slow-why` focuses on explaining **why it happened**.
+
+---
+
+**Made with ❤️ for developers who hate slow requests**

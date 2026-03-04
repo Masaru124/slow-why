@@ -1,23 +1,50 @@
 {
   "name": "slow-why",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Automatically explains why a Node.js request is slow in development",
+  "main": "src/index.js",
+  "files": ["src/", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
-    "dev": "tsup src/index.ts --watch"
+    "test": "node test/unit-tests.js",
+    "test:integration": "node test/final-test.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "performance",
+    "debugging", 
+    "express",
+    "nodejs",
+    "development",
+    "n-plus-one",
+    "slow-queries",
+    "monitoring"
+  ],
+  "author": "slow-why contributors",
+  "license": "MIT",
   "type": "commonjs",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "boxen": "^8.0.1",
-    "chalk": "^5.6.2",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "chalk": "^4.1.2"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3"
-  }
+    "express": "^5.2.1"
+  },
+  "peerDependencies": {
+    "express": "^4.0.0 || ^5.0.0",
+    "pg": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {"optional": true},
+    "pg": {"optional": true}
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/slow-why.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/slow-why/issues"
+  },
+  "homepage": "https://github.com/your-username/slow-why#readme"
 }
