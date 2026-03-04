@@ -2,11 +2,13 @@
   "name": "slow-why",
   "version": "1.0.0",
   "description": "Automatically explains why a Node.js request is slow in development",
-  "main": "src/index.js",
-  "files": ["src/", "README.md", "LICENSE"],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist/", "README.md", "LICENSE"],
   "scripts": {
-    "test": "node test/unit-tests.js",
-    "test:integration": "node test/final-test.js"
+    "build": "tsc",
+    "test": "npm run build && node test/unit-tests.js",
+    "test:integration": "npm run build && node test/final-test.js"
   },
   "keywords": [
     "performance",
@@ -29,7 +31,10 @@
     "chalk": "^4.1.2"
   },
   "devDependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0",
+    "@types/express": "^4.17.21"
   },
   "peerDependencies": {
     "express": "^4.0.0 || ^5.0.0",

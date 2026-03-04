@@ -3,7 +3,7 @@ console.log('🧪 Testing slow-why...\n')
 
 // Test 1: Basic import
 try {
-  const { analyzeRequest } = require('../src/index.js')
+  const { analyzeRequest } = require('../dist/index.js')
   console.log('✅ Import successful')
 } catch (err) {
   console.log('❌ Import failed:', err.message)
@@ -12,7 +12,7 @@ try {
 
 // Test 2: N+1 Detection
 console.log('\n📊 Testing N+1 Detection...')
-const { analyzeRequest } = require('../src/index.js')
+const { analyzeRequest } = require('../dist/index.js')
 
 const context = {
   path: '/test-n-plus-one',

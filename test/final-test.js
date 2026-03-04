@@ -1,5 +1,5 @@
 const express = require('express')
-const { slowWhy, patchPg, patchFetch } = require('../src/index.js')
+const { slowWhy, patchPg, patchFetch } = require('../dist/index.js')
 
 // Create a proper mock pg Client class
 class MockClient {

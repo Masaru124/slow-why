@@ -3,7 +3,7 @@ const {
   detectNPlusOne, 
   detectSlowExternal, 
   detectEventBlocking 
-} = require('../src/index-final.js')
+} = require('../dist/index.js')
 
 console.log('🧪 Running Unit Tests for slow-why\n')
 
